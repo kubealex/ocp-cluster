@@ -1,0 +1,7 @@
+resources:
+- crds.yaml               
+- common.yaml
+- operator-openshift.yaml 
+- cluster-test.yaml
+- filesystem-test.yaml
+- fs-sc.yml
