@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  creationTimestamp: '2022-03-24T09:20:15Z'
+  generation: 6
+  managedFields:
+    - apiVersion: tekton.dev/v1beta1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          .: {}
+          'f:steps': {}
+          'f:workspaces': {}
+      manager: Mozilla
+      operation: Update
+      time: '2022-03-24T10:08:37Z'
+  name: list-files
+  namespace: demo-quarkus
+  resourceVersion: '801661'
+  uid: 5cfff7ba-a02c-4682-a5b8-6a3ed09b8bf4
+spec:
+  steps:
+    - command:
+        - /bin/bash
+        - '-c'
+        - ls
+        - latr
+      image: registry.redhat.io/ubi8/ubi-minimal
+      name: ''
+      resources: {}
+      workingDir: $(workspaces.quarkus-build.path)
+  workspaces:
+    - description: The workspace consisting of maven project.
+      name: quarkus-build

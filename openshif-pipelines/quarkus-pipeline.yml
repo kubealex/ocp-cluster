@@ -1,0 +1,128 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: new-pipeline
+  namespace: demo-quarkus
+spec:
+  params:
+    - default: username
+      description: push username
+      name: USERNAME
+      type: string
+    - default: password
+      description: push password
+      name: PASSWORD
+      type: string
+    - default: quarkus-resteasy
+      description: application context
+      name: CONTEXT_DIR
+      type: string
+  resources:
+    - name: app-repo
+      type: git
+  tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: 'https://github.com/kubealex/quarkus-demo.git'
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: deleteExisting
+          value: 'true'
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: >-
+            registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:af7dd5b3b1598a980f17d5f5d3d8a4b11ab4f5184677f7f17ad302baa36bd3c1
+        - name: userHome
+          value: /tekton/home
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: quarkus-build
+    - name: maven-xxx
+      params:
+        - name: MAVEN_IMAGE
+          value: >-
+            gcr.io/cloud-builders/mvn@sha256:57523fc43394d6d9d2414ee8d1c85ed7a13460cbb268c3cd16d28cfb3859e641
+        - name: GOALS
+          value:
+            - package
+        - name: PROXY_PROTOCOL
+          value: http
+        - name: CONTEXT_DIR
+          value: $(params.CONTEXT_DIR)
+      runAfter:
+        - maven
+      taskRef:
+        kind: ClusterTask
+        name: maven
+      workspaces:
+        - name: source
+          workspace: quarkus-build
+        - name: maven-settings
+          workspace: quarkus-build
+    - name: list-files
+      runAfter:
+        - buildah
+      taskRef:
+        kind: Task
+        name: list-files
+      workspaces:
+        - name: quarkus-build
+          workspace: quarkus-build
+    - name: buildah
+      params:
+        - name: IMAGE
+          value: 'quay.io/kubealex/test-quarkus:$(tasks.maven.results.VERSION)'
+        - name: BUILDER_IMAGE
+          value: >-
+            registry.redhat.io/rhel8/buildah@sha256:e19cf23d5f1e0608f5a897f0a50448beb9f8387031cca49c7487ec71bd91c4d3
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: ./$(params.CONTEXT_DIR)/src/main/docker/Dockerfile.jvm
+        - name: CONTEXT
+          value: ./$(params.CONTEXT_DIR)
+        - name: TLSVERIFY
+          value: 'true'
+        - name: FORMAT
+          value: oci
+        - name: PUSH_EXTRA_ARGS
+          value: '--creds $(params.USERNAME):$(params.PASSWORD)'
+      runAfter:
+        - maven-xxx
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: quarkus-build
+    - name: maven
+      params:
+        - name: MAVEN_IMAGE
+          value: 'registry.access.redhat.com/ubi8/openjdk-17:latest'
+        - name: GOALS
+          value: package
+        - name: MAVEN_BUILD_OPTS
+          value: '-DskipTests'
+        - name: WORK_DIRECTORY
+          value: ./$(params.CONTEXT_DIR)
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: Task
+        name: maven
+      workspaces:
+        - name: output
+          workspace: quarkus-build
+        - name: maven-settings
+          workspace: quarkus-build
+  workspaces:
+    - name: quarkus-build
