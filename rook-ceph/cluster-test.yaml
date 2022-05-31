@@ -1,3 +1,12 @@
+#################################################################################################################
+# Define the settings for the rook-ceph cluster with common settings for a small test cluster.
+# All nodes with available raw devices will be used for the Ceph cluster. One node is sufficient
+# in this example.
+
+# For example, to create the cluster:
+#   kubectl create -f crds.yaml -f common.yaml -f operator.yaml
+#   kubectl create -f cluster-test.yaml
+#################################################################################################################
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -40,17 +49,11 @@ spec:
       mon:
         interval: 45s
         timeout: 600s
+  priorityClassNames:
+    all: system-node-critical
+    mgr: system-cluster-critical
   disruptionManagement:
     managePodBudgets: true
-  placement:
-    osd:
-      tolerations:
-      - effect: NoExecute
-        operator: Exists 
-      - effect: NoSchedule
-        operator: Exists 
-      - effect: PreferNoSchedule
-        operator: Exists     
 ---
 apiVersion: ceph.rook.io/v1
 kind: CephBlockPool
