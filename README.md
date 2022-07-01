@@ -3,3 +3,4 @@ Repo for cluster resources
 - registry patcher
 - testing fuse
 - adding integration
+- lab testing
