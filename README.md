@@ -6,3 +6,4 @@ Repo for cluster resources
 - lab testing
 - commit
 - update 
+- test
